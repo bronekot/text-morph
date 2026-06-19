@@ -1,0 +1,32 @@
+{
+  "name": "text-morph-library-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/lib/index.js",
+  "module": "./src/lib/index.js",
+  "exports": {
+    ".": "./src/lib/index.js"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@twistezo/react-text-scramble": "^2.1.1",
+    "baffle": "^0.3.6",
+    "gsap": "^3.15.0",
+    "lucide-react": "^1.21.0",
+    "motion": "^12.40.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "shuffle-letters": "^1.1.0",
+    "shuffle-text": "^0.5.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "vite": "^8.0.16"
+  }
+}
