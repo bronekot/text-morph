@@ -57,6 +57,40 @@ const player = createTextMorphPlayer({
 player.start();
 ```
 
+## Browser ESM
+
+For a browser page without a build step, import a pinned version through a CDN:
+
+```html
+<span data-morph>Dendi200822</span>
+
+<script type="module">
+  import {
+    createTextMorphPlayer,
+    createTextMorphSteps,
+  } from 'https://cdn.jsdelivr.net/gh/bronekot/text-morph@v0.1.0/src/index.js';
+
+  const transition = createTextMorphSteps('Cat', 'amatsuhikoni', {
+    seed: 1,
+  });
+
+  console.log(transition.steps);
+
+  const player = createTextMorphPlayer({
+    words: ['Dendi200822', 'Wolfy169', 'TactiKot'],
+    seed: 42,
+    onUpdate: (text) => {
+      document.querySelector('[data-morph]').textContent = text;
+    },
+  });
+
+  player.start();
+</script>
+```
+
+Use a tag such as `v0.1.0` instead of `main` so the loaded API does not change
+unexpectedly.
+
 ## API
 
 ### `createTextMorphSteps(source, target, options)`
