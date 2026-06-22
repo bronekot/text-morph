@@ -2,11 +2,21 @@
 
 Framework-independent JavaScript text morphing utilities.
 
-The library is exported from `src/lib/index.js` and does not import React or any
-browser UI framework. The React page in this project is only a demo shell.
+The library is exported from `src/index.js` and does not import React or any
+browser UI framework.
+
+The local project is split into three parts:
+
+- `text_morph` - this repository, the library package
+- `text_morph_demo` - a separate Vite demo package with a local `file:../text_morph` dependency
+- `text_morph_obs` - standalone OBS HTML/config files
+
+Later, CI can build this package and the demo/OBS files can load the built
+library from GitHub. For now the demo uses the local package and the OBS files
+stay standalone.
 
 ```js
-import { createTextMorphPlayer, createTextMorphSteps } from 'text-morph-library-demo';
+import { createTextMorphPlayer, createTextMorphSteps } from 'text-morph';
 
 const plan = createTextMorphSteps('Dendi200822', 'Wolfy169');
 

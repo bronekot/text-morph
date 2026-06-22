@@ -1,5 +1,10 @@
 export const DEFAULT_MORPH_SYMBOLS =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#_+=?';
+const ENGLISH_MORPH_SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const RUSSIAN_MORPH_SYMBOLS =
+  'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+const DIGIT_MORPH_SYMBOLS = '0123456789';
+const SPECIAL_MORPH_SYMBOLS = '!@#$%^&*()_+-=[]{};:\'",.<>/?\\|`~№';
 
 export const DEFAULT_MORPH_OPTIONS = {
   maxSteps: 1000,
@@ -7,8 +12,8 @@ export const DEFAULT_MORPH_OPTIONS = {
 };
 
 const DEFAULT_OPTIONS = DEFAULT_MORPH_OPTIONS;
-const TARGET_CHANGE_CHANCE = 0.58;
-const FORCE_TARGET_TICKET_COUNT = 2;
+const TARGET_CHANGE_CHANCE = 0.3;
+const EXTRA_CHAR_DELETE_CHANCE = TARGET_CHANGE_CHANCE;
 
 const DEFAULT_PLAYER_OPTIONS = {
   stepMs: 90,
@@ -48,6 +53,79 @@ function splitText(value) {
 
 function chooseRandomItem(items, random) {
   return items[Math.floor(random() * items.length)];
+}
+
+function appendUniqueSymbols(parts) {
+  const seen = new Set();
+  let result = '';
+
+  parts.forEach((part) => {
+    splitText(part).forEach((char) => {
+      if (seen.has(char)) return;
+
+      seen.add(char);
+      result += char;
+    });
+  });
+
+  return result;
+}
+
+function isEnglishLetter(char) {
+  return /^[A-Za-z]$/.test(char);
+}
+
+function isRussianLetter(char) {
+  return /^[А-Яа-яЁё]$/u.test(char);
+}
+
+function isDigit(char) {
+  return /^[0-9]$/.test(char);
+}
+
+function isWhitespace(char) {
+  return /^\s$/u.test(char);
+}
+
+function createDynamicMorphSymbols(source, target, fallback = DEFAULT_MORPH_SYMBOLS) {
+  const chars = splitText(`${source}${target}`);
+  const literalSymbols = [];
+  const groups = {
+    english: false,
+    russian: false,
+    digits: false,
+    special: false,
+  };
+
+  chars.forEach((char) => {
+    if (isEnglishLetter(char)) {
+      groups.english = true;
+      return;
+    }
+
+    if (isRussianLetter(char)) {
+      groups.russian = true;
+      return;
+    }
+
+    if (isDigit(char)) {
+      groups.digits = true;
+      return;
+    }
+
+    if (isWhitespace(char)) return;
+
+    groups.special = true;
+    literalSymbols.push(char);
+  });
+
+  const parts = [];
+  if (groups.english) parts.push(ENGLISH_MORPH_SYMBOLS);
+  if (groups.russian) parts.push(RUSSIAN_MORPH_SYMBOLS);
+  if (groups.digits) parts.push(DIGIT_MORPH_SYMBOLS);
+  if (groups.special) parts.push(SPECIAL_MORPH_SYMBOLS, literalSymbols.join(''));
+
+  return appendUniqueSymbols(parts) || fallback;
 }
 
 function getMismatchIndexes(current, target, length = target.length) {
@@ -241,8 +319,12 @@ function chooseReplacementChar(currentChar, targetChar, settings, random) {
   return chooseRandomItem(candidates.length ? candidates : symbolChars, random);
 }
 
-function shouldUseTargetChange(ticketCount, random) {
-  return ticketCount <= FORCE_TARGET_TICKET_COUNT || random() < TARGET_CHANGE_CHANCE;
+function shouldUseTargetChange(random) {
+  return random() < TARGET_CHANGE_CHANCE;
+}
+
+function shouldDeleteExtraChar(random) {
+  return random() < EXTRA_CHAR_DELETE_CHANCE;
 }
 
 function resolveTicket(ticket, current, targetChars, settings, random, ticketCount) {
@@ -259,7 +341,7 @@ function resolveTicket(ticket, current, targetChars, settings, random, ticketCou
     }
 
     const targetChar = targetChars[targetIndex];
-    const useTarget = shouldUseTargetChange(ticketCount, random);
+    const useTarget = shouldUseTargetChange(random);
     const replacement = useTarget
       ? targetChar
       : chooseReplacementChar(current[ticket.index], targetChar, settings, random);
@@ -290,11 +372,29 @@ function resolveTicket(ticket, current, targetChars, settings, random, ticketCou
       };
     }
 
+    if (shouldDeleteExtraChar(random)) {
+      return {
+        operation: {
+          type: 'delete',
+          index: option.index,
+          char: option.char,
+          direction: 'shrink',
+        },
+        optionCount: options.length,
+      };
+    }
+
+    const replacement = chooseReplacementChar(option.char, undefined, settings, random);
+
     return {
       operation: {
-        type: 'delete',
+        type: 'change',
+        mode: 'scramble',
         index: option.index,
-        char: option.char,
+        from: option.char,
+        to: replacement,
+        target: null,
+        targetIndex: null,
         direction: 'shrink',
       },
       optionCount: options.length,
@@ -423,6 +523,12 @@ export function createTextMorphSteps(source, target, options = {}) {
   const targetChars = splitText(targetText);
   const current = splitText(sourceText);
   const settings = normalizeMorphOptions(options);
+  const hasCustomSymbols = Object.prototype.hasOwnProperty.call(options, 'symbols');
+
+  if (!hasCustomSymbols) {
+    settings.symbols = createDynamicMorphSymbols(sourceText, targetText, settings.symbols);
+  }
+
   const random = normalizeRng(settings);
   const commonLetters = findCommonLetters(sourceText, targetText);
   const steps = [];
