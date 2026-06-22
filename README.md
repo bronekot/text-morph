@@ -1,59 +1,218 @@
-# Step Text Morph
+# text-morph
 
-Framework-independent JavaScript text morphing utilities.
+Framework-independent JavaScript utilities for planning and playing text morph
+animations.
 
-The library is exported from `src/index.js` and does not import React or any
-browser UI framework.
+`text-morph` does not render UI. It produces deterministic step plans and a
+small timer-driven player that you can connect to React, Vue, Svelte, Canvas,
+plain DOM, OBS browser sources, or any other rendering layer.
 
-The local project is split into three parts:
+## Features
 
-- `text_morph` - this repository, the library package
-- `text_morph_demo` - a separate Vite demo package with a local `file:../text_morph` dependency
-- `text_morph_obs` - standalone OBS HTML/config files
+- Works with plain JavaScript strings and Unicode characters.
+- Preserves common letters as anchors while morphing.
+- Supports growing, shrinking, and same-length transitions.
+- Can run deterministically with a numeric `seed` or custom `rng`.
+- Has no runtime dependencies and no framework dependency.
+- Exposes low-level transition plans and a simple high-level player.
 
-Later, CI can build this package and the demo/OBS files can load the built
-library from GitHub. For now the demo uses the local package and the OBS files
-stay standalone.
+## Install
+
+From this public GitHub repository:
+
+```sh
+npm install git+https://github.com/bronekot/text-morph.git
+```
+
+From a sibling local checkout:
+
+```sh
+npm install ../text_morph
+```
+
+If this package is published to npm later, the dependency can be changed to the
+published package name.
+
+## Quick Start
 
 ```js
 import { createTextMorphPlayer, createTextMorphSteps } from 'text-morph';
 
-const plan = createTextMorphSteps('Dendi200822', 'Wolfy169');
+const transition = createTextMorphSteps('Dendi200822', 'Wolfy169', {
+  seed: 42,
+});
+
+console.log(transition.steps.map((step) => step.text));
 
 const player = createTextMorphPlayer({
   words: ['Dendi200822', 'Wolfy169', 'TactiKot'],
   stepMs: 85,
   holdMs: 620,
-  onUpdate: (text) => console.log(text),
+  seed: 42,
+  onUpdate: (text) => {
+    document.querySelector('[data-morph]').textContent = text;
+  },
 });
 
 player.start();
 ```
 
-By default every step first aligns the current text to the target while
-preserving existing common characters where possible. For example, `Cat` keeps
-the existing `at` when morphing to `amatsuhikoni`. Then it builds a ticket list
-and picks one ticket randomly. The list contains one `change(index)` ticket for
-every mismatched aligned position, plus repeated generic `add` / `delete`
-tickets for the remaining length difference. After an `add` or `delete` ticket
-wins, the exact position is chosen from the current alignment. Added characters
-are temporary scramble characters and do not have to match the target
-immediately.
+## API
 
-After a `change(index)` ticket wins, the replacement is resolved at that moment:
-it can be either the target character or a temporary scramble character. Near
-the end of a transition, changes settle to target characters so the morph always
-finishes.
+### `createTextMorphSteps(source, target, options)`
 
-Rules:
+Creates a transition plan from `source` to `target`.
 
-- each step performs exactly one action: `add`, `delete`, or `change`
-- shrinking text only deletes characters; it never adds temporary characters
-- growing text only adds characters; it never deletes temporary characters
-- existing common characters are used as anchors before choosing add/delete
-  positions
-- added characters can be temporary and are later corrected by `change(index)`
-- replacement characters can also be temporary; `change(index)` does not always
-  jump directly to the target character
-- action probability follows the ticket list; if four deletes are still needed,
-  four delete tickets are present
+```js
+const transition = createTextMorphSteps('Cat', 'amatsuhikoni', {
+  maxSteps: 1000,
+  seed: 1,
+});
+```
+
+Returns:
+
+```js
+{
+  source: 'Cat',
+  target: 'amatsuhikoni',
+  commonLetters: [
+    { char: 'a', sourceIndex: 1, targetIndex: 0 },
+    { char: 't', sourceIndex: 2, targetIndex: 3 },
+  ],
+  structuralStepCount: 9,
+  candidateChoiceCount: 123,
+  randomStepCount: 12,
+  targetStepCount: 8,
+  steps: [
+    {
+      type: 'add',
+      index: 0,
+      char: 'b',
+      direction: 'grow',
+      target: 'a',
+      targetIndex: 0,
+      text: 'bCat',
+      before: 'Cat',
+    },
+  ],
+}
+```
+
+Each item in `steps` is one operation:
+
+- `add` inserts one character.
+- `delete` removes one character.
+- `change` replaces one character.
+
+Every step includes `before` and `text`, so renderers can apply the plan by
+assigning `step.text`.
+
+### `createTextMorphSequence(words, options)`
+
+Creates transition plans for each adjacent pair in `words`.
+
+```js
+const sequence = createTextMorphSequence(['one', 'two', 'three'], {
+  seed: 7,
+});
+```
+
+### `createTextMorphPlayer(options)`
+
+Creates a timer-driven player around `createTextMorphSteps`.
+
+```js
+const player = createTextMorphPlayer({
+  words: ['one', 'two', 'three'],
+  stepMs: 90,
+  holdMs: 650,
+  startDelayMs: 120,
+  seed: 7,
+  onTransition: (transition, index) => {},
+  onStep: (step, stepIndex, transition) => {},
+  onUpdate: (text, step, transition) => {},
+  onComplete: (finalText) => {},
+});
+
+player.start();
+player.stop();
+```
+
+The player returns:
+
+```js
+{
+  start,
+  stop,
+  createSequence,
+}
+```
+
+### `findCommonLetters(source, target)`
+
+Returns common characters used as stable alignment anchors.
+
+```js
+findCommonLetters('Cat', 'amatsuhikoni');
+// [{ char: 'a', sourceIndex: 1, targetIndex: 0 }, ...]
+```
+
+## Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `maxSteps` | `number` | `1000` | Safety cap for a single transition plan. |
+| `symbols` | `string` | dynamic | Characters used for temporary scramble states. |
+| `seed` | `number` | none | Deterministic seed for repeatable plans. |
+| `rng` | `() => number` | `Math.random` | Custom random number generator. |
+| `words` | `string[]` | `[source, target]` | Player word sequence. |
+| `source` | `string` | none | Player source when `words` is not provided. |
+| `target` | `string` | none | Player target when `words` is not provided. |
+| `stepMs` | `number` | `90` | Delay between player steps. |
+| `holdMs` | `number` | `650` | Delay between transitions. |
+| `startDelayMs` | `number` | `120` | Delay before the first transition. |
+
+When `symbols` is omitted, the library builds a symbol set from the source and
+target text. English letters, Russian letters, digits, and special characters
+are added only when they are relevant to the transition.
+
+## Browser Bundle
+
+Build the ESM and UMD artifacts:
+
+```sh
+npm run build
+```
+
+The build outputs:
+
+- `dist/text-morph.js`
+- `dist/text-morph.umd.cjs`
+
+The repository exports source files directly, so local Git dependencies work
+without a build step. Built artifacts are useful for publishing or CDN usage.
+
+## Development
+
+```sh
+npm install
+npm test
+npm run build
+npm run check
+```
+
+`npm run check` runs the test suite and the library build.
+
+## Public Repository Notes
+
+This repository intentionally contains only the framework-independent library.
+The demo application and OBS browser-source files live outside this repository.
+
+No secrets are required to build or test the package. Keep `.env` files and OBS
+tokens outside the repository.
+
+## License
+
+No open-source license has been selected yet. Until a `LICENSE` file is added,
+public visibility does not grant reuse rights by default.

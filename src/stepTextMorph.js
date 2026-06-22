@@ -11,7 +11,6 @@ export const DEFAULT_MORPH_OPTIONS = {
   symbols: DEFAULT_MORPH_SYMBOLS,
 };
 
-const DEFAULT_OPTIONS = DEFAULT_MORPH_OPTIONS;
 const TARGET_CHANGE_CHANCE = 0.3;
 const EXTRA_CHAR_DELETE_CHANCE = TARGET_CHANGE_CHANCE;
 
@@ -128,16 +127,6 @@ function createDynamicMorphSymbols(source, target, fallback = DEFAULT_MORPH_SYMB
   return appendUniqueSymbols(parts) || fallback;
 }
 
-function getMismatchIndexes(current, target, length = target.length) {
-  const indexes = [];
-
-  for (let index = 0; index < length; index += 1) {
-    if (current[index] !== target[index]) indexes.push(index);
-  }
-
-  return indexes;
-}
-
 function createFittedAlignment(shortChars, longChars) {
   const shortLength = shortChars.length;
   const longLength = longChars.length;
@@ -214,7 +203,7 @@ function createTextAlignment(sourceChars, targetChars) {
 
 function normalizeMorphOptions(options) {
   const merged = {
-    ...DEFAULT_OPTIONS,
+    ...DEFAULT_MORPH_OPTIONS,
     ...options,
   };
 
@@ -222,7 +211,7 @@ function normalizeMorphOptions(options) {
     ...merged,
     maxSteps: Math.max(
       1,
-      Math.round(normalizePositiveNumber(merged.maxSteps, DEFAULT_OPTIONS.maxSteps)),
+      Math.round(normalizePositiveNumber(merged.maxSteps, DEFAULT_MORPH_OPTIONS.maxSteps)),
     ),
     symbols: String(merged.symbols || DEFAULT_MORPH_SYMBOLS),
   };
@@ -327,7 +316,7 @@ function shouldDeleteExtraChar(random) {
   return random() < EXTRA_CHAR_DELETE_CHANCE;
 }
 
-function resolveTicket(ticket, current, targetChars, settings, random, ticketCount) {
+function resolveTicket(ticket, current, targetChars, settings, random) {
   const alignment = createTextAlignment(current, targetChars);
 
   if (ticket.type === 'change') {
@@ -439,7 +428,6 @@ function chooseNextOperation(current, targetChars, settings, random) {
       targetChars,
       settings,
       random,
-      ticketCount,
     );
 
     if (resolved.operation) {
@@ -570,7 +558,7 @@ export function createTextMorphSequence(words, options = {}) {
 export function createTextMorphPlayer(options = {}) {
   const settings = {
     ...DEFAULT_PLAYER_OPTIONS,
-    ...DEFAULT_OPTIONS,
+    ...DEFAULT_MORPH_OPTIONS,
     ...options,
   };
   const words = (settings.words ?? [settings.source, settings.target])

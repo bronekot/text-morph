@@ -1,13 +1,29 @@
 {
   "name": "text-morph",
-  "private": true,
   "version": "0.1.0",
-  "description": "Framework-independent JavaScript text morphing utilities.",
+  "description": "Framework-independent JavaScript utilities for planning and playing text morph animations.",
   "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bronekot/text-morph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bronekot/text-morph/issues"
+  },
+  "homepage": "https://github.com/bronekot/text-morph#readme",
+  "keywords": [
+    "text",
+    "morph",
+    "animation",
+    "scramble",
+    "unicode"
+  ],
   "main": "./src/index.js",
   "module": "./src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "src",
@@ -17,7 +33,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "vite build",
-    "check": "node --input-type=module -e \"import('./src/index.js').then(({ createTextMorphSteps }) => { const result = createTextMorphSteps('abc', 'abd', { seed: 1 }); if (!result.steps.length) process.exit(1); })\""
+    "check": "npm test && npm run build",
+    "test": "node --test"
   },
   "devDependencies": {
     "vite": "^8.0.16"
