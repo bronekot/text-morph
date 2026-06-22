@@ -214,5 +214,4 @@ tokens outside the repository.
 
 ## License
 
-No open-source license has been selected yet. Until a `LICENSE` file is added,
-public visibility does not grant reuse rights by default.
+MIT. See [LICENSE](LICENSE).

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Framework-independent JavaScript utilities for planning and playing text morph animations.",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bronekot/text-morph.git"
@@ -28,6 +28,7 @@
   "files": [
     "src",
     "dist",
+    "LICENSE",
     "README.md"
   ],
   "sideEffects": false,
