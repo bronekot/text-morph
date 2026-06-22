@@ -59,7 +59,7 @@ player.start();
 
 ## Browser ESM
 
-For a browser page without a build step, import a pinned version through a CDN:
+For a browser page without a build step, import the pinned GitHub Pages bundle:
 
 ```html
 <span data-morph>Dendi200822</span>
@@ -68,7 +68,7 @@ For a browser page without a build step, import a pinned version through a CDN:
   import {
     createTextMorphPlayer,
     createTextMorphSteps,
-  } from 'https://cdn.jsdelivr.net/gh/bronekot/text-morph@v0.1.0/src/index.js';
+  } from 'https://bronekot.github.io/text-morph/v0.1.0/text-morph.js';
 
   const transition = createTextMorphSteps('Cat', 'amatsuhikoni', {
     seed: 1,
@@ -88,8 +88,20 @@ For a browser page without a build step, import a pinned version through a CDN:
 </script>
 ```
 
-Use a tag such as `v0.1.0` instead of `main` so the loaded API does not change
-unexpectedly.
+Use a versioned Pages path such as `/v0.1.0/` instead of the root latest bundle
+when a browser page should not pick up new releases automatically.
+
+The latest Pages build is also available at:
+
+```js
+import { createTextMorphSteps } from 'https://bronekot.github.io/text-morph/text-morph.js';
+```
+
+For immutable GitHub source imports through jsDelivr, use:
+
+```js
+import { createTextMorphSteps } from 'https://cdn.jsdelivr.net/gh/bronekot/text-morph@v0.1.0/src/index.js';
+```
 
 ## API
 
@@ -222,10 +234,17 @@ npm run build
 The build outputs:
 
 - `dist/text-morph.js`
-- `dist/text-morph.umd.cjs`
+- `dist/text-morph.umd.js`
+
+GitHub Pages serves the same files from:
+
+- `https://bronekot.github.io/text-morph/text-morph.js`
+- `https://bronekot.github.io/text-morph/text-morph.umd.js`
+- `https://bronekot.github.io/text-morph/v0.1.0/text-morph.js`
+- `https://bronekot.github.io/text-morph/v0.1.0/text-morph.umd.js`
 
 The repository exports source files directly, so local Git dependencies work
-without a build step. Built artifacts are useful for publishing or CDN usage.
+without a build step. Built artifacts are useful for browser and OBS usage.
 
 ## Development
 
@@ -233,10 +252,12 @@ without a build step. Built artifacts are useful for publishing or CDN usage.
 npm install
 npm test
 npm run build
+npm run build:pages
 npm run check
 ```
 
-`npm run check` runs the test suite and the library build.
+`npm run check` runs the test suite and the library build. `npm run build:pages`
+builds the GitHub Pages artifact in `site/`.
 
 ## Public Repository Notes
 

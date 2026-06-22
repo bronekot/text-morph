@@ -6,7 +6,7 @@ export default defineConfig({
       entry: 'src/index.js',
       name: 'TextMorph',
       formats: ['es', 'umd'],
-      fileName: (format) => (format === 'es' ? 'text-morph.js' : 'text-morph.umd.cjs'),
+      fileName: (format) => (format === 'es' ? 'text-morph.js' : 'text-morph.umd.js'),
     },
   },
 });
